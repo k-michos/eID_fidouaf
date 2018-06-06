@@ -20,6 +20,7 @@ ebay-build.xml
 4cc.checksum
 /.metadata
 /.project
-/target
+/target/
 .DS_Store
 /.settings/
+.classpath
