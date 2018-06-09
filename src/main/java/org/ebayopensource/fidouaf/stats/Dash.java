@@ -33,6 +33,7 @@ public class Dash {
 	private static Dash instance = new Dash();
 	public Map<String, Object> stats = new  HashMap<String, Object>();
 	public List<Object> history = new ArrayList<Object>(100);
+	public List<Object> history_auth = new ArrayList<Object>(100);
 	public List<String> uuids = new ArrayList<String>();
 	public List<String> facetIds = new ArrayList<String>();
 	
@@ -49,6 +50,13 @@ public class Dash {
 			history.remove(0);
 		}
 		history.add(o);
+	}
+	
+	public void add_auth(Object o){
+		if (history_auth.size() >99){
+			history_auth.remove(0);
+		}
+		history_auth.add(o);
 	}
 	
 }

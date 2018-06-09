@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.sql.*;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -59,8 +60,10 @@ import org.ebayopensource.fidouaf.res.util.DeregRequestProcessor;
 import org.ebayopensource.fidouaf.res.util.FetchRequest;
 import org.ebayopensource.fidouaf.res.util.ProcessResponse;
 import org.ebayopensource.fidouaf.res.util.StorageImpl;
+import org.ebayopensource.fidouaf.stats.Auth_Reqs;
 import org.ebayopensource.fidouaf.stats.Dash;
 import org.ebayopensource.fidouaf.stats.Info;
+import org.ebayopensource.fidouaf.stats.History_Auth_Object;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -107,6 +110,35 @@ public class FidoUafResource {
 		return Dash.getInstance().history;
 	}
 
+	@GET
+	@Path("/historyAuth")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<Object> getHistoryAuth() {
+		return Dash.getInstance().history_auth;
+	}
+	
+	@GET
+	@Path("/stelios")
+	@Produces(MediaType.APPLICATION_JSON)
+	public List<History_Auth_Object> getallAuths() {
+		return Auth_Reqs.getAuth().history_auth_resp;
+	}
+	
+	@GET
+	@Path("/stelios/{afm}")
+	@Produces(MediaType.APPLICATION_JSON)
+	public boolean checkAuthenticatedUser(@PathParam("afm") String afm) {
+		List<History_Auth_Object> auth_list = Auth_Reqs.getAuth().history_auth_resp;
+		boolean auth_status = false;
+		//Timestamp exact_time = new Timestamp(System.currentTimeMillis());
+		int exact_time = (int) (new Date().getTime()/1000);
+		for (int i = 0; i<auth_list.size(); i++) {
+		//	System.out.println(exact_time - auth_list.get(i).auth_time);
+			if(auth_list.get(i).username.equals(afm) && (exact_time - auth_list.get(i).auth_time) <15) auth_status=true; 
+		}
+		return auth_status;
+	} 
+	
 	@GET
 	@Path("/registrations")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -343,6 +375,7 @@ public class FidoUafResource {
 				.getAuthenticationRequest();
 		Dash.getInstance().stats.put(Dash.LAST_AUTH_REQ, ret);
 		Dash.getInstance().history.add(ret);
+//		Dash.getInstance().history_auth.add(ret);
 		return ret;
 	}
 
@@ -358,8 +391,20 @@ public class FidoUafResource {
 					AuthenticationResponse[].class);
 			Dash.getInstance().stats.put(Dash.LAST_AUTH_RES, authResp);
 			Dash.getInstance().history.add(authResp);
+			Dash.getInstance().history_auth.add(authResp);
 			AuthenticatorRecord[] result = new ProcessResponse()
 					.processAuthResponse(authResp[0]);
+			History_Auth_Object current_auth = new History_Auth_Object();
+		//	Timestamp auth_time = new Timestamp(System.currentTimeMillis());		
+			int auth_time = (int) (new Date().getTime()/1000);
+				current_auth.auth_time = auth_time;
+				current_auth.AAID = result[0].AAID;
+				current_auth.deviceId = result[0].deviceId;
+				current_auth.KeyID=result[0].KeyID;
+				current_auth.username= result[0].username;
+				current_auth.status= result[0].status;
+				
+			Auth_Reqs.getAuth().history_auth_resp.add(current_auth);
 			return result;
 		}
 		return new AuthenticatorRecord[0];
